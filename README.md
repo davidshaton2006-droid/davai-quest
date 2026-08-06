@@ -40,17 +40,29 @@ git remote add origin <URL твоего репозитория davai-quest>
 git push -u origin main
 ```
 
-### 3. Хостинг (Vercel)
+### 3. Хостинг — GitHub Pages
 
-1. Импортировать репозиторий в [vercel.com](https://vercel.com) (framework preset — Vite).
-2. В **Settings → Environment Variables** добавить `VITE_SUPABASE_URL` и `VITE_SUPABASE_ANON_KEY`
-   (те же значения, что в `.env`, не коммитить сам `.env`).
-3. Deploy.
+Публикация настроена через GitHub Actions ([`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml)):
+при каждом пуше в `main` он собирает проект (`npm run build`) и выкладывает `dist/` на Pages.
 
-### 4. Домен
+1. В репозитории на GitHub: **Settings → Pages → Build and deployment → Source** — выбрать
+   **GitHub Actions**.
+2. Там же: **Settings → Secrets and variables → Actions → New repository secret** — добавить
+   вручную (не вставляй их мне в чат, это ключи доступа к базе):
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   (значения — из Supabase **Project Settings → API**, те же, что в `.env`).
+3. Запушить в `main` (или запустить workflow вручную — вкладка **Actions** → Deploy to
+   GitHub Pages → Run workflow). После первого успешного запуска сайт будет доступен на
+   `https://<твой-логин>.github.io/davai-quest/`.
 
-В настройках проекта на Vercel → **Domains** → добавить свой домен, прописать у регистратора
-CNAME/A-записи по инструкции, которую покажет Vercel.
+`vite.config.js` уже настроен на `base: '/davai-quest/'` при сборке (нужно для корректных путей
+на GitHub Pages) — при переименовании репозитория это значение нужно поменять там же.
+
+### 4. Домен (опционально)
+
+В репозитории **Settings → Pages → Custom domain** — вписать свой домен, прописать у
+регистратора CNAME-запись на `<твой-логин>.github.io` по инструкции GitHub.
 
 ### 5. Автосбор данных из Apple Health (Shortcuts)
 

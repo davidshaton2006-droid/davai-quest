@@ -2,11 +2,11 @@
   "name": "DAVAI QUEST",
   "short_name": "DAVAI QUEST",
   "description": "Персональный игровой ассистент для управления задачами, проектами и здоровьем",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#070a14",
   "theme_color": "#070a14",
   "icons": [
-    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]
 }
