@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070a14">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>DAVAI QUEST — центр управления</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="app"><div class="wrap">
+
+  <div class="hud">
+    <div class="avatar-block">
+      <div class="avatar"><span id="avatarInitial">Д</span></div>
+      <div class="id-block">
+        <div class="name">Давид</div>
+        <div class="role">Полная упаковка рекламы · Full-stack маркетинг</div>
+        <div class="lvl-chip">УРОВЕНЬ <span id="lvlNum">1</span></div>
+      </div>
+    </div>
+    <div class="xp-mid">
+      <div class="xp-label"><span id="xpText">0 / 100 XP</span><span id="xpNext">до след. уровня</span></div>
+      <div class="xp-bar-track"><div class="xp-bar-fill" id="xpFill" style="width:0%"></div></div>
+    </div>
+    <div class="stat-strip">
+      <div class="stat-pill energy"><div class="v" id="energyVal">100</div><div class="k">энергия</div></div>
+      <div class="stat-pill streak"><div class="v" id="streakVal">0</div><div class="k">стрик</div></div>
+      <div class="stat-pill coins"><div class="v" id="coinsVal">0</div><div class="k">кристаллы</div></div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button data-tab="dash" class="active">Обзор</button>
+    <button data-tab="tasks">Задачи</button>
+    <button data-tab="projects">Проекты</button>
+    <button data-tab="health">Здоровье</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="tab-content active" id="tab-dash">
+    <div class="grid2">
+      <div class="panel">
+        <h3 class="panel-title">Квесты на сегодня</h3>
+        <div class="quickadd">
+          <input type="text" id="qaTitle" placeholder="Новая задача...">
+          <select id="qaProject"></select>
+          <select id="qaPriority">
+            <option value="high">Высокий</option>
+            <option value="mid" selected>Средний</option>
+            <option value="low">Низкий</option>
+          </select>
+          <button id="qaAddBtn">+ Добавить</button>
+        </div>
+        <div class="task-list" id="dashTaskList"></div>
+      </div>
+      <div>
+        <div class="panel">
+          <h3 class="panel-title">Энергия</h3>
+          <div class="energy-ring">
+            <svg width="130" height="130"><circle cx="65" cy="65" r="54" stroke="rgba(255,255,255,0.07)" stroke-width="10" fill="none"/><circle id="energyCircle" cx="65" cy="65" r="54" stroke="url(#eg)" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="339" stroke-dashoffset="0"/><defs><linearGradient id="eg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffb92e"/><stop offset="100%" stop-color="#ff3fb0"/></linearGradient></defs></svg>
+            <div class="val"><b id="energyRingVal">100</b><span>ИЗ 100</span></div>
+          </div>
+          <p class="small-note" id="energyNote">Энергия восстанавливается сном и отдыхом, тратится на выполнение задач.</p>
+        </div>
+        <div class="panel" id="reminderPanel">
+          <h3 class="panel-title">Напоминания</h3>
+          <div id="reminderBody" class="small-note">Загрузка...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TASKS -->
+  <div class="tab-content" id="tab-tasks">
+    <div class="panel">
+      <h3 class="panel-title">Все задачи</h3>
+      <div class="quickadd">
+        <input type="text" id="taskTitle" placeholder="Название задачи...">
+        <select id="taskProject"></select>
+        <select id="taskPriority">
+          <option value="high">Высокий</option>
+          <option value="mid" selected>Средний</option>
+          <option value="low">Низкий</option>
+        </select>
+        <input type="date" id="taskDue">
+        <button id="taskAddBtn">+ Добавить</button>
+      </div>
+      <div class="field-row">
+        <span style="font-size:12px;color:var(--text-faint);">Фильтр:</span>
+        <select id="filterProject"><option value="all">Все проекты</option></select>
+        <select id="filterStatus">
+          <option value="active">Активные</option>
+          <option value="all">Все</option>
+          <option value="done">Выполненные</option>
+        </select>
+      </div>
+      <div class="task-list" id="fullTaskList"></div>
+    </div>
+  </div>
+
+  <!-- PROJECTS -->
+  <div class="tab-content" id="tab-projects">
+    <div class="panel">
+      <h3 class="panel-title">Проекты</h3>
+      <div class="quickadd">
+        <input type="text" id="newProjName" placeholder="Название нового проекта...">
+        <button id="addProjBtn">+ Проект</button>
+      </div>
+      <div class="grid3" id="projectGrid"></div>
+    </div>
+  </div>
+
+  <!-- HEALTH -->
+  <div class="tab-content" id="tab-health">
+    <div class="panel">
+      <h3 class="panel-title">Сводка по здоровью</h3>
+      <p class="section-sub">Анализ трендов за последние 7 дней, а не разовых значений</p>
+      <div class="health-summary" id="healthSummary"></div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <h3 class="panel-title">Сон</h3>
+        <p class="section-sub">Записывай сколько спал — влияет на энергию и XP</p>
+        <div class="field-row">
+          <input type="number" id="sleepHours" min="0" max="14" step="0.5" placeholder="Часов сна" style="width:130px;">
+          <button class="btn" id="logSleepBtn">Записать сон</button>
+        </div>
+        <div class="mini-bars" id="sleepChart"></div>
+      </div>
+      <div class="panel">
+        <h3 class="panel-title">Подвижность</h3>
+        <p class="section-sub">Последняя разминка: <span id="lastMoveText">—</span></p>
+        <button class="btn" id="logMoveBtn">Я размялся ✓</button>
+        <div class="mini-bars" id="moveChart" style="margin-top:16px;"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3 class="panel-title">Настройки напоминаний</h3>
+      <div class="field-row">
+        <label style="font-size:13px;color:var(--text-dim);">Напоминать двигаться каждые</label>
+        <input type="number" id="moveIntervalInput" min="10" max="180" style="width:80px;">
+        <span style="font-size:13px;color:var(--text-dim);">минут</span>
+        <button class="btn ghost small" id="saveIntervalsBtn">Сохранить</button>
+      </div>
+      <div class="field-row">
+        <label style="font-size:13px;color:var(--text-dim);">Напоминать про сон после</label>
+        <input type="number" id="sleepReminderInput" min="0" max="23" style="width:80px;">
+        <span style="font-size:13px;color:var(--text-dim);">часов (0-23)</span>
+      </div>
+      <p class="small-note">Данные сна/шагов/активности также приходят автоматически из Apple Health через Shortcuts — см. README.</p>
+    </div>
+  </div>
+
+</div></div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
