@@ -1,7 +1,10 @@
 import { state } from './store.js';
 import * as queries from '../api/queries.js';
 import { todayStr, last7Dates, showToast } from '../utils/helpers.js';
+import { guardOffline } from './offline.js';
 import { addXP, adjustEnergy } from './profile.js';
+
+const notifyOffline = () => showToast('Нет сети', 'Изменение не сохранено — работаем офлайн.');
 
 /* ---------- Загрузка ---------- */
 export async function loadHealth() {
@@ -30,7 +33,8 @@ export async function logSleepEntry() {
   if (isNaN(val) || val < 0) return;
   const today = todayStr();
 
-  await queries.logSleep(val, today);
+  const saved = await guardOffline(() => queries.logSleep(val, today), notifyOffline);
+  if (!saved) return;
   const existing = state.health.sleep.find((s) => s.date === today);
   if (existing) existing.hours = val;
   else state.health.sleep.push({ date: today, hours: val });
@@ -45,7 +49,8 @@ export async function logSleepEntry() {
 
 export async function logMovementEntry() {
   const today = todayStr();
-  await queries.logActivity('movement_count', 1, today);
+  const saved = await guardOffline(() => queries.logActivity('movement_count', 1, today), notifyOffline);
+  if (!saved) return;
   const existing = state.health.movement.find((m) => m.date === today);
   if (existing) existing.count += 1;
   else state.health.movement.push({ date: today, count: 1 });
@@ -64,7 +69,9 @@ export async function saveIntervals() {
   if (!isNaN(mv) && mv >= 5) patch.move_interval_min = mv;
   if (!isNaN(sr) && sr >= 0 && sr <= 23) patch.sleep_reminder_hour = sr;
   if (Object.keys(patch).length) {
-    Object.assign(state.profile, await queries.updateProfile(patch));
+    const updated = await guardOffline(() => queries.updateProfile(patch), notifyOffline);
+    if (!updated) return;
+    Object.assign(state.profile, updated);
   }
   showToast('Настройки сохранены', 'Интервалы напоминаний обновлены');
 }

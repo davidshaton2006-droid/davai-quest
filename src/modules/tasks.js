@@ -1,10 +1,12 @@
 import { state } from './store.js';
 import * as queries from '../api/queries.js';
 import { escapeHtml, showToast } from '../utils/helpers.js';
+import { guardOffline } from './offline.js';
 import { addXP, subtractXP, adjustEnergy, renderHud } from './profile.js';
 import { renderProjects } from './projects.js';
 
 const XP_BY_PRIORITY = { high: 20, mid: 12, low: 6 };
+const notifyOffline = () => showToast('Нет сети', 'Изменение не сохранено — работаем офлайн.');
 
 export async function addTask(mode) {
   const titleEl = mode === 'qa' ? document.getElementById('qaTitle') : document.getElementById('taskTitle');
@@ -14,13 +16,18 @@ export async function addTask(mode) {
   const title = titleEl.value.trim();
   if (!title) return;
 
-  const created = await queries.createTask({
-    title,
-    project_id: projEl.value || null,
-    priority: prioEl.value,
-    due_date: dueEl && dueEl.value ? dueEl.value : null,
-    done: false
-  });
+  const created = await guardOffline(
+    () =>
+      queries.createTask({
+        title,
+        project_id: projEl.value || null,
+        priority: prioEl.value,
+        due_date: dueEl && dueEl.value ? dueEl.value : null,
+        done: false
+      }),
+    notifyOffline
+  );
+  if (!created) return;
   state.tasks.unshift(created);
 
   titleEl.value = '';
@@ -36,7 +43,8 @@ export async function toggleTask(id) {
   const done = !t.done;
   const xp = XP_BY_PRIORITY[t.priority];
 
-  const updated = await queries.toggleTask(id, done);
+  const updated = await guardOffline(() => queries.toggleTask(id, done), notifyOffline);
+  if (!updated) return;
   Object.assign(t, updated);
 
   if (done) {
@@ -54,7 +62,11 @@ export async function toggleTask(id) {
 }
 
 export async function deleteTask(id) {
-  await queries.deleteTask(id);
+  const result = await guardOffline(async () => {
+    await queries.deleteTask(id);
+    return true;
+  }, notifyOffline);
+  if (!result) return;
   state.tasks = state.tasks.filter((x) => x.id !== id);
   renderTasks();
   renderDashTasks();

@@ -1,6 +1,7 @@
 import { state } from './store.js';
 import { updateProfile } from '../api/queries.js';
 import { todayStr, showToast } from '../utils/helpers.js';
+import { guardOffline } from './offline.js';
 
 export function xpForLevel(lvl) {
   return lvl * 100;
@@ -18,7 +19,8 @@ export async function applyDailyTick() {
       else if (diffDays > 1) streak = 0;
     }
     const energy = Math.min(100, p.energy + 20);
-    Object.assign(p, await updateProfile({ last_active_date: today, streak, energy }));
+    const updated = await guardOffline(() => updateProfile({ last_active_date: today, streak, energy }), () => {});
+    if (updated) Object.assign(p, updated);
   }
 }
 

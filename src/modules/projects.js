@@ -1,13 +1,18 @@
 import { state } from './store.js';
 import * as queries from '../api/queries.js';
-import { escapeHtml, PROJECT_COLORS } from '../utils/helpers.js';
+import { escapeHtml, PROJECT_COLORS, showToast } from '../utils/helpers.js';
+import { guardOffline } from './offline.js';
 
 export async function addProject() {
   const inp = document.getElementById('newProjName');
   const name = inp.value.trim();
   if (!name) return;
   const color = PROJECT_COLORS[state.projects.length % PROJECT_COLORS.length];
-  const created = await queries.createProject(name, color);
+  const created = await guardOffline(
+    () => queries.createProject(name, color),
+    () => showToast('Нет сети', 'Проект не сохранён — работаем офлайн.')
+  );
+  if (!created) return;
   state.projects.push(created);
   inp.value = '';
   fillProjectSelects();

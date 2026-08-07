@@ -1,12 +1,26 @@
 import { supabase } from './supabaseClient.js';
 
-const USER_KEY = 'david';
+// user_key = UID из Supabase Auth текущего вошедшего пользователя.
+// Выставляется один раз при входе (main.js), до этого запросы не выполняются.
+let USER_KEY = null;
+export function setUserKey(key) {
+  USER_KEY = key;
+}
 
 /* ---------- Профиль ---------- */
 export async function getProfile() {
-  const { data, error } = await supabase.from('profile').select('*').eq('user_key', USER_KEY).single();
+  const { data, error } = await supabase.from('profile').select('*').eq('user_key', USER_KEY).maybeSingle();
   if (error) throw error;
-  return data;
+  if (data) return data;
+
+  // Первый вход этого пользователя — профиль ещё не создан, заводим с дефолтами.
+  const { data: created, error: insertError } = await supabase
+    .from('profile')
+    .insert({ user_key: USER_KEY })
+    .select()
+    .single();
+  if (insertError) throw insertError;
+  return created;
 }
 export async function updateProfile(patch) {
   const { data, error } = await supabase
