@@ -88,36 +88,97 @@ function wireEvents() {
 }
 
 /* ---------- Экран входа/регистрации ---------- */
+// login/register — email+пароль; verify — код после регистрации; forgot — запрос кода
+// сброса пароля; reset — код + новый пароль.
+const AUTH_FIELDS = {
+  login: { email: true, password: true, code: false, newPassword: false, tabs: true, forgot: true, back: false, resend: false, submitLabel: 'Войти' },
+  register: { email: true, password: true, code: false, newPassword: false, tabs: true, forgot: false, back: false, resend: false, submitLabel: 'Зарегистрироваться' },
+  verify: { email: true, password: false, code: true, newPassword: false, tabs: false, forgot: false, back: true, resend: true, submitLabel: 'Подтвердить' },
+  forgot: { email: true, password: false, code: false, newPassword: false, tabs: false, forgot: false, back: true, resend: false, submitLabel: 'Отправить код' },
+  reset: { email: true, password: false, code: true, newPassword: true, tabs: false, forgot: false, back: true, resend: false, submitLabel: 'Сохранить пароль' }
+};
 let authMode = 'login';
+
+function applyAuthMode(mode) {
+  authMode = mode;
+  const cfg = AUTH_FIELDS[mode];
+  const emailEl = document.getElementById('authEmail');
+  emailEl.classList.toggle('hidden', !cfg.email);
+  emailEl.readOnly = mode === 'verify' || mode === 'reset';
+  document.getElementById('authPassword').classList.toggle('hidden', !cfg.password);
+  document.getElementById('authCode').classList.toggle('hidden', !cfg.code);
+  document.getElementById('authNewPassword').classList.toggle('hidden', !cfg.newPassword);
+  document.getElementById('authTabs').classList.toggle('hidden', !cfg.tabs);
+  document.getElementById('authForgotBtn').classList.toggle('hidden', !cfg.forgot);
+  document.getElementById('authBackBtn').classList.toggle('hidden', !cfg.back);
+  document.getElementById('authResendBtn').classList.toggle('hidden', !cfg.resend);
+  document.getElementById('authSubmitBtn').textContent = cfg.submitLabel;
+  document.getElementById('authError').textContent = '';
+  document.getElementById('authInfo').textContent = '';
+  if (mode === 'login' || mode === 'register') {
+    document.querySelectorAll('.auth-tab').forEach((t) => t.classList.toggle('active', t.dataset.authtab === mode));
+  }
+}
 
 function wireAuth() {
   document.querySelectorAll('.auth-tab').forEach((tab) => {
-    tab.addEventListener('click', () => {
-      authMode = tab.dataset.authtab;
-      document.querySelectorAll('.auth-tab').forEach((t) => t.classList.toggle('active', t === tab));
-      document.getElementById('authSubmitBtn').textContent = authMode === 'login' ? 'Войти' : 'Создать аккаунт';
-      document.getElementById('authError').textContent = '';
-    });
+    tab.addEventListener('click', () => applyAuthMode(tab.dataset.authtab));
+  });
+  document.getElementById('authForgotBtn').addEventListener('click', () => applyAuthMode('forgot'));
+  document.getElementById('authBackBtn').addEventListener('click', () => applyAuthMode('login'));
+  document.getElementById('authResendBtn').addEventListener('click', async () => {
+    const email = document.getElementById('authEmail').value;
+    const infoEl = document.getElementById('authInfo');
+    const errorEl = document.getElementById('authError');
+    try {
+      await auth.resendSignupCode(email);
+      infoEl.textContent = 'Код отправлен повторно на ' + email + '.';
+    } catch (err) {
+      errorEl.textContent = err.message;
+    }
   });
 
   document.getElementById('authForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const username = document.getElementById('authUsername').value;
+    const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
+    const code = document.getElementById('authCode').value;
+    const newPassword = document.getElementById('authNewPassword').value;
     const errorEl = document.getElementById('authError');
+    const infoEl = document.getElementById('authInfo');
     const submitBtn = document.getElementById('authSubmitBtn');
     errorEl.textContent = '';
+    infoEl.textContent = '';
     submitBtn.disabled = true;
     try {
-      if (authMode === 'login') await auth.login(username, password);
-      else await auth.register(username, password);
-      // onAuthChange подхватит сессию и запустит вход в приложение
+      if (authMode === 'login') {
+        await auth.login(email, password);
+        // onAuthChange подхватит сессию и запустит вход в приложение
+      } else if (authMode === 'register') {
+        await auth.register(email, password);
+        applyAuthMode('verify');
+        document.getElementById('authEmail').value = email;
+        document.getElementById('authInfo').textContent = 'Код отправлен на ' + email + '.';
+      } else if (authMode === 'verify') {
+        await auth.verifySignup(email, code);
+        // onAuthChange подхватит сессию
+      } else if (authMode === 'forgot') {
+        await auth.requestPasswordReset(email);
+        applyAuthMode('reset');
+        document.getElementById('authEmail').value = email;
+        document.getElementById('authInfo').textContent = 'Код для сброса пароля отправлен на ' + email + '.';
+      } else if (authMode === 'reset') {
+        await auth.confirmPasswordReset(email, code, newPassword);
+        // onAuthChange подхватит сессию (recovery-код сразу авторизует)
+      }
     } catch (err) {
       errorEl.textContent = err.message;
     } finally {
       submitBtn.disabled = false;
     }
   });
+
+  applyAuthMode('login');
 }
 
 function showAuthScreen() {

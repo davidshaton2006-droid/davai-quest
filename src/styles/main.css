@@ -209,6 +209,9 @@ h1,h2,h3{margin:0;}
 #authForm input{width:100%;}
 #authForm button{margin-top:4px;}
 .auth-error{color:var(--red);font-size:12px;margin-top:12px;min-height:14px;line-height:1.5;}
+.auth-info{color:var(--green);font-size:12px;margin-top:4px;line-height:1.5;}
+.auth-link{background:none;border:none;color:var(--cyan);font-size:12px;text-decoration:underline;cursor:pointer;padding:8px 0 0;text-align:left;}
+.auth-link.hidden{display:none;}
 
 /* ---------- OFFLINE ---------- */
 .offline-banner{

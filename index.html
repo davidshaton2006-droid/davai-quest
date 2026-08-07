@@ -15,16 +15,22 @@
 <div id="authScreen" class="auth-screen">
   <div class="auth-card">
     <div class="auth-logo">DAVAI QUEST</div>
-    <div class="auth-tabs">
+    <div class="auth-tabs" id="authTabs">
       <button type="button" class="auth-tab active" data-authtab="login">Вход</button>
       <button type="button" class="auth-tab" data-authtab="register">Регистрация</button>
     </div>
     <form id="authForm">
-      <input type="text" id="authUsername" placeholder="Имя пользователя" autocomplete="username" required>
+      <input type="email" id="authEmail" placeholder="Email" autocomplete="email" required>
       <input type="password" id="authPassword" placeholder="Пароль (от 6 символов)" autocomplete="current-password" required minlength="6">
+      <input type="text" id="authCode" class="hidden" placeholder="Код из письма" inputmode="numeric" autocomplete="one-time-code">
+      <input type="password" id="authNewPassword" class="hidden" placeholder="Новый пароль (от 6 символов)" minlength="6">
       <button type="submit" class="btn" id="authSubmitBtn">Войти</button>
     </form>
+    <button type="button" id="authResendBtn" class="auth-link hidden">Отправить код ещё раз</button>
+    <button type="button" id="authForgotBtn" class="auth-link">Забыл пароль?</button>
+    <button type="button" id="authBackBtn" class="auth-link hidden">← Назад ко входу</button>
     <div id="authError" class="auth-error"></div>
+    <div id="authInfo" class="auth-info"></div>
     <p class="small-note">После первого входа приложение работает офлайн — последнее состояние кэшируется на устройстве.</p>
   </div>
 </div>

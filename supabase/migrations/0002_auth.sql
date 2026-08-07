@@ -1,10 +1,13 @@
 -- Переход от единственного захардкоженного пользователя 'david' к регистрации
--- по имени/паролю через Supabase Auth. Выполнить в SQL Editor ПОСЛЕ schema.sql.
+-- по email/паролю через Supabase Auth. Выполнить в SQL Editor ПОСЛЕ schema.sql.
 --
--- ВАЖНО перед выполнением: в Authentication → Providers → Email выключить
--- "Confirm email" — приложение использует синтетические адреса вида
--- username@davaiquest.local, подтвердить их по почте невозможно, а без
--- отключения этой настройки Supabase не даст войти сразу после регистрации.
+-- ВАЖНО перед выполнением: в Authentication → Providers → Email "Confirm email"
+-- должен быть ВКЛЮЧЁН (это значение по умолчанию для нового проекта) — регистрация
+-- подтверждается кодом из письма. Чтобы письмо показывало именно 6-значный код,
+-- а не только ссылку, открой Authentication → Email Templates → Confirm signup
+-- и добавь в текст письма переменную {{ .Token }} — она подставит код, который
+-- проверяется в приложении через supabase.auth.verifyOtp(). Тот же шаблон/переменная
+-- используется и в письме "Reset Password" для восстановления пароля.
 
 drop policy if exists "allow all for david" on profile;
 drop policy if exists "allow all for david" on projects;
