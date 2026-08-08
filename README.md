@@ -128,12 +128,18 @@ RLS и даёт полный доступ к чужим данным при ут
 `/newbot` → задать имя и username (например `davai_quest_bot`) → сохранить выданный
 **токен бота**.
 
-**6.3 — установить Supabase CLI и залогиниться** (если ещё не стоит):
+**6.3 — Supabase CLI.** Глобально через `npm install -g supabase` он больше не ставится
+(Supabase это специально запретили) — проще всего просто вызывать его через `npx`, без
+установки: каждая команда ниже начинается с `npx supabase` вместо `supabase`. Выполнять из
+папки проекта (`cd davai-quest`):
 ```bash
-npm install -g supabase
-supabase login
-supabase link --project-ref <project-ref>   # project-ref — из Project URL: https://<project-ref>.supabase.co
+npx supabase login
+npx supabase link --project-ref <project-ref>   # project-ref — из Project URL: https://<project-ref>.supabase.co
 ```
+`login` откроет браузер — подтверди вход в свой аккаунт Supabase там же, где обычно заходишь
+в дашборд. Если хочешь, чтобы дальше не писать `npx` перед каждой командой — на Windows можно
+поставить через [Scoop](https://scoop.sh): `scoop bucket add supabase https://github.com/supabase/scoop-bucket.git`
+затем `scoop install supabase`, и дальше просто `supabase ...` без `npx`.
 
 **6.4 — задать секреты функций.** Придумать свою случайную строку для `TELEGRAM_WEBHOOK_SECRET`
 и `CRON_SECRET` (любые длинные случайные строки, например из `openssl rand -hex 20`).
@@ -141,17 +147,17 @@ supabase link --project-ref <project-ref>   # project-ref — из Project URL: 
 ключ, что в `.env` фронтенда — не путать, этот боевой, обходит RLS, идёт только в секреты
 функций, никогда во фронтенд и никогда в GitHub Actions):
 ```bash
-supabase secrets set TELEGRAM_BOT_TOKEN=<токен от BotFather>
-supabase secrets set TELEGRAM_WEBHOOK_SECRET=<своя случайная строка>
-supabase secrets set CRON_SECRET=<другая своя случайная строка>
-supabase secrets set SUPABASE_URL=https://<project-ref>.supabase.co
-supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<Secret key из Project Settings → API Keys>
+npx supabase secrets set TELEGRAM_BOT_TOKEN=<токен от BotFather>
+npx supabase secrets set TELEGRAM_WEBHOOK_SECRET=<своя случайная строка>
+npx supabase secrets set CRON_SECRET=<другая своя случайная строка>
+npx supabase secrets set SUPABASE_URL=https://<project-ref>.supabase.co
+npx supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<Secret key из Project Settings → API Keys>
 ```
 
 **6.5 — задеплоить функции:**
 ```bash
-supabase functions deploy telegram-webhook --no-verify-jwt
-supabase functions deploy telegram-reminders --no-verify-jwt
+npx supabase functions deploy telegram-webhook --no-verify-jwt
+npx supabase functions deploy telegram-reminders --no-verify-jwt
 ```
 
 **6.6 — зарегистрировать вебхук у Telegram** (один раз, вызвать откуда угодно — например
