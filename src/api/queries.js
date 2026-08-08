@@ -135,3 +135,20 @@ export async function getLastMovement() {
   if (error) throw error;
   return data ? data.created_at : null;
 }
+
+/* ---------- Telegram ---------- */
+export async function getTelegramLink() {
+  const { data, error } = await supabase.from('telegram_links').select('chat_id').eq('user_key', USER_KEY).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+export async function createTelegramLinkToken() {
+  const token = crypto.randomUUID().replace(/-/g, '');
+  const { error } = await supabase.from('telegram_link_tokens').insert({ token, user_key: USER_KEY });
+  if (error) throw error;
+  return token;
+}
+export async function disconnectTelegram() {
+  const { error } = await supabase.from('telegram_links').delete().eq('user_key', USER_KEY);
+  if (error) throw error;
+}

@@ -9,6 +9,7 @@ import { addTask, renderDashTasks, renderTasks } from './modules/tasks.js';
 import { addProject, renderProjects, fillProjectSelects } from './modules/projects.js';
 import { loadHealth, renderHealth, logSleepEntry, logMovementEntry, saveIntervals } from './modules/health.js';
 import { renderReminders, startReminderLoop } from './modules/reminders.js';
+import { loadTelegramStatus, renderTelegram } from './modules/telegram.js';
 
 let appStarted = false;
 let currentUserKey = null;
@@ -43,6 +44,18 @@ function renderAll() {
   renderProjects();
   renderHealth();
   renderReminders();
+  renderTelegram();
+}
+
+// Таблицы Telegram — отдельная миграция (0003_telegram.sql), которую можно ещё
+// не успеть выполнить. Грузим статус отдельно от основного состояния, чтобы
+// отсутствующая таблица не роняла вход в приложение целиком.
+async function loadTelegramSafely() {
+  try {
+    await loadTelegramStatus();
+  } catch (err) {
+    console.warn('Telegram status unavailable:', err.message);
+  }
 }
 
 function wireNav() {
@@ -197,6 +210,7 @@ async function enterApp(session) {
   document.getElementById('app').classList.remove('hidden');
 
   await loadState();
+  await loadTelegramSafely();
   await applyDailyTick();
   renderAll();
   startReminderLoop();

@@ -114,9 +114,82 @@ git push -u origin main
 токеном пользователя из шага 0. Ключ `service_role`/Secret нигде не используется — он обходит
 RLS и даёт полный доступ к чужим данным при утечке.
 
-### 6. Telegram-интеграция — тоже пока не сделано
+### 6. Telegram-интеграция
 
-Договорились обсудить отдельно, когда дойдём до этого шага.
+Бот умеет две вещи: присылает напоминания (энергия, разминка, поздний час) и принимает
+записи текстом («сон 7», «размялся»). Реализовано двумя Supabase Edge Functions —
+[`telegram-webhook`](supabase/functions/telegram-webhook/index.ts) (приём сообщений) и
+[`telegram-reminders`](supabase/functions/telegram-reminders/index.ts) (рассылка по расписанию).
+
+**6.1 — таблицы.** В SQL Editor выполнить [`supabase/migrations/0003_telegram.sql`](supabase/migrations/0003_telegram.sql)
+(после `schema.sql` и `0002_auth.sql`).
+
+**6.2 — создать бота.** В Telegram написать [@BotFather](https://t.me/BotFather) →
+`/newbot` → задать имя и username (например `davai_quest_bot`) → сохранить выданный
+**токен бота**.
+
+**6.3 — установить Supabase CLI и залогиниться** (если ещё не стоит):
+```bash
+npm install -g supabase
+supabase login
+supabase link --project-ref <project-ref>   # project-ref — из Project URL: https://<project-ref>.supabase.co
+```
+
+**6.4 — задать секреты функций.** Придумать свою случайную строку для `TELEGRAM_WEBHOOK_SECRET`
+и `CRON_SECRET` (любые длинные случайные строки, например из `openssl rand -hex 20`).
+`SERVICE_ROLE_KEY` — из Supabase **Project Settings → API Keys → Secret key** (это не тот
+ключ, что в `.env` фронтенда — не путать, этот боевой, обходит RLS, идёт только в секреты
+функций, никогда во фронтенд и никогда в GitHub Actions):
+```bash
+supabase secrets set TELEGRAM_BOT_TOKEN=<токен от BotFather>
+supabase secrets set TELEGRAM_WEBHOOK_SECRET=<своя случайная строка>
+supabase secrets set CRON_SECRET=<другая своя случайная строка>
+supabase secrets set SUPABASE_URL=https://<project-ref>.supabase.co
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<Secret key из Project Settings → API Keys>
+```
+
+**6.5 — задеплоить функции:**
+```bash
+supabase functions deploy telegram-webhook --no-verify-jwt
+supabase functions deploy telegram-reminders --no-verify-jwt
+```
+
+**6.6 — зарегистрировать вебхук у Telegram** (один раз, вызвать откуда угодно — например
+через `curl` в терминале):
+```bash
+curl "https://api.telegram.org/bot<токен от BotFather>/setWebhook" \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://<project-ref>.functions.supabase.co/telegram-webhook","secret_token":"<TELEGRAM_WEBHOOK_SECRET из 6.4>"}'
+```
+
+**6.7 — расписание напоминаний.** В SQL Editor (один раз):
+```sql
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+
+select cron.schedule(
+  'telegram-reminders',
+  '*/15 * * * *',
+  $$
+  select net.http_post(
+    url := 'https://<project-ref>.functions.supabase.co/telegram-reminders',
+    headers := jsonb_build_object('x-cron-secret', '<CRON_SECRET из 6.4>'),
+    body := '{}'::jsonb
+  );
+  $$
+);
+```
+
+**6.8 — подключить фронтенд.** Добавить username бота (без `@`) в `.env` и в GitHub-секрет:
+```
+VITE_TELEGRAM_BOT_USERNAME=davai_quest_bot
+```
+(в GitHub — тем же способом, что `VITE_SUPABASE_*`, раздел «3. Хостинг» выше; после
+добавления секрета пересобрать через Actions → Run workflow).
+
+После этого в приложении на вкладке **Здоровье** появится рабочая кнопка «Подключить
+Telegram» — она открывает чат с ботом, `/start` внутри чата довершает привязку аккаунта.
+В чате дальше работают команды `сон 7`, `размялся`, `/help`.
 
 ## Регистрация и вход
 
@@ -147,6 +220,21 @@ RLS-политики на `auth.uid()` ([`supabase/migrations/0002_auth.sql`](su
 - `public/sw.js` — service worker, кэширующий HTML/CSS/JS самого приложения, чтобы оно
   открывалось офлайн даже с пустым кэшем браузера (не только с уже посещённой вкладки).
 
+## Telegram
+
+- **Привязка**: кнопка в приложении создаёт одноразовый токен → открывает
+  `t.me/<бот>?start=<токен>` → `/start` в чате находит токен и связывает `chat_id` с
+  аккаунтом (таблица `telegram_links`).
+- **Запись через бота**: сообщения «сон 7» / «размялся» пишут в те же таблицы
+  (`sleep_logs`/`activity_logs`) и начисляют тот же XP/энергию, что и форма в приложении —
+  логика продублирована в `telegram-webhook`, так как Edge Function не может импортировать
+  код фронтенда.
+- **Напоминания**: `telegram-reminders` раз в 15 минут (расписание `pg_cron`) проверяет тех же
+  трёх условий, что и внутриигровые напоминания (низкая энергия / давно не двигался / поздний
+  час), и шлёт сообщение не чаще раза в день на каждое условие.
+- Обе функции работают через `service_role`-ключ (обходит RLS) — это единственное место в
+  проекте, где этот ключ используется, и он никогда не попадает во фронтенд.
+
 ## Структура проекта
 
 ```
@@ -165,7 +253,8 @@ davai-quest/
 │   │   ├── tasks.js
 │   │   ├── projects.js
 │   │   ├── health.js        + analyzeHealth() — сводка по трендам
-│   │   └── reminders.js
+│   │   ├── reminders.js
+│   │   └── telegram.js      привязка аккаунта к боту
 │   ├── styles/main.css
 │   └── utils/helpers.js
 ├── public/
@@ -174,7 +263,12 @@ davai-quest/
 │   └── sw.js                офлайн-кэш статики приложения
 └── supabase/
     ├── schema.sql
-    └── migrations/0002_auth.sql
+    ├── migrations/
+    │   ├── 0002_auth.sql
+    │   └── 0003_telegram.sql
+    └── functions/
+        ├── telegram-webhook/index.ts     приём сообщений бота
+        └── telegram-reminders/index.ts   напоминания по расписанию
 ```
 
 ## Примечания

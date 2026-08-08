@@ -9,5 +9,6 @@ export const state = {
     sleep: [],
     movement: [],
     lastMovementAt: null
-  }
+  },
+  telegram: null
 };
